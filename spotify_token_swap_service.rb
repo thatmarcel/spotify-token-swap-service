@@ -76,6 +76,24 @@ module SpotifyTokenSwapService
 
       self.class.post("/api/token", options)
     end
+    
+    def token(auth_code:)
+      options = default_options.deep_merge(query: {
+        grant_type: "authorization_code",
+        redirect_uri: config.client_callback_url,
+        code: auth_code
+      })
+
+      self.class.post("/api/token", options)
+    end
+    
+    def client_credentials()
+      options = default_options.deep_merge(query: {
+        grant_type: "client_credentials"
+      })
+
+      self.class.post("/api/token", options)
+    end
 
     def refresh_token(refresh_token:)
       options = default_options.deep_merge(query: {
@@ -192,6 +210,19 @@ module SpotifyTokenSwapService
     post "/api/token" do
       begin
         http = HTTP.new.token(auth_code: params[:code])
+        status_code, response = EncryptionMiddleware.new(http).run
+
+        status status_code
+        json response
+      rescue StandardError => e
+        status 400
+        json error: e
+      end
+    end
+    
+    post "/api/client_credentials" do
+      begin
+        http = HTTP.new.client_credentials()
         status_code, response = EncryptionMiddleware.new(http).run
 
         status status_code
